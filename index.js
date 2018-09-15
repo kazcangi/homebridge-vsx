@@ -203,38 +203,42 @@ VSX.prototype.setVolume = function (volume, callback) {
 
 VSX.prototype.getMuted = function (callback) {
 
-  sleep(100);
-  const me = this;
-  me.log('Query Mute Status on ' + me.HOST + ':' + me.PORT);
+    const me = this;
+    var client = new net.Socket();
 
-  var client = new net.Socket();
-  client.on('error', function (ex) {
-    me.log("Received an error while communicating" + ex);
-    callback(ex);
-  });
+    sleep(100);
 
-  me.log("Connecting");
-  client.connect(me.PORT, me.HOST, function () {
-    client.write('?M\r\n');
-  });
+    client.on('error', function (ex) {
+        me.log("Received an error while communicating" + ex);
+        callback(ex);
+    });
 
-  client.on('data', function (data) {
-    me.log('Received data: ' + data);
+    client.on('close', function() {
+        me.log('Connection closed');
+    });
 
-    var str = data.toString();
+    me.log("Connecting");
+    client.connect(me.PORT, me.HOST, function () {
+        me.log('Query Mute Status on ' + me.HOST + ':' + me.PORT);
+        client.write('?M\r\n');
+    });
 
-    if (str.includes("MUT0")) {
-      me.log("Mute is On");
-      client.destroy();
-      callback(null, true);
-    } else if (str.includes("MUT1")) {
-      me.log("Mute is Off");
-      client.destroy();
-      callback(null, false);
-    } else {
-      me.log("waiting");
-    }
-  });
+    client.on('data', function (data) {
+        me.log('Received data: ' + data);
+        var str = data.toString();
+
+        if (str.includes("MUT0")) {
+            me.log("Muted");
+            client.destroy();
+            callback(null, true);
+        } else if (str.includes("MUT1")) {
+            me.log("Not Muted");
+            client.destroy();
+            callback(null, false);
+        } else {
+            me.log("waiting");
+        }
+    });
 };
 
 VSX.prototype.setMuted = function (mute, callback) {
@@ -247,11 +251,11 @@ VSX.prototype.setMuted = function (mute, callback) {
     client.on('error', function (ex) {
         me.log("Communication error" + ex);
         callback(ex)
-        });
+    });
 
     client.on('close', function() {
         me.log('Connection closed');
-        });
+    });
 
     if (mute) {
         me.log("Connecting");
@@ -259,14 +263,14 @@ VSX.prototype.setMuted = function (mute, callback) {
             me.log('Set Muted on ' + me.HOST + ':' + me.PORT);
             client.write('MO\r\n');
             client.destroy();
-            });
+        });
     } else {
         me.log("Connecting");
         client.connect(me.PORT, me.HOST, function () {
             me.log('Set Not Muted on ' + me.HOST + ':' + me.PORT);
             client.write('MF\r\n');
             client.destroy();
-            });
+        });
     }
     callback();
 
