@@ -239,30 +239,35 @@ VSX.prototype.getMuted = function (callback) {
 
 VSX.prototype.setMuted = function (mute, callback) {
 
-  sleep(100);
+    const me = this;
+    var client = new net.Socket();
 
-  const me = this;
-  var client = new net.Socket();
-  client.on('error', function (ex) {
-    me.log("Received an error while communicating" + ex);
-    callback(ex)
-  });
+    sleep(100);
 
-  if (mute) {
-    client.connect(me.PORT, me.HOST, function () {
-      me.log('Set Mute on ' + me.HOST + ':' + me.PORT);
-      client.write('MO\r\n');
-      client.destroy();
-    });
-  }
+    client.on('error', function (ex) {
+        me.log("Communication error" + ex);
+        callback(ex)
+        });
 
-  if (!mute) {
-    client.connect(me.PORT, me.HOST, function () {
-      me.log('Set Mute off ' + me.HOST + ':' + me.PORT);
-      client.write('MF\r\n');
-      client.destroy();
-    });
-  }
-  callback();
+    client.on('close', function() {
+        me.log('Connection closed');
+        });
+
+    if (mute) {
+        me.log("Connecting");
+        client.connect(me.PORT, me.HOST, function () {
+            me.log('Set Muted on ' + me.HOST + ':' + me.PORT);
+            client.write('MO\r\n');
+            client.destroy();
+            });
+    } else {
+        me.log("Connecting");
+        client.connect(me.PORT, me.HOST, function () {
+            me.log('Set Not Muted on ' + me.HOST + ':' + me.PORT);
+            client.write('MF\r\n');
+            client.destroy();
+            });
+    }
+    callback();
 
 };
